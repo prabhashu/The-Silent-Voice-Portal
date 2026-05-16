@@ -67,9 +67,9 @@ export async function analyzeSentiment(text: string) {
     }
     
     return { score, rawLabel: label };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error analyzing sentiment with Gemini:', error);
-    return { score: 0.5 }; // Fallback
+    return { score: 0.5, rawLabel: `Error: ${error?.message || 'Unknown'}` }; // Fallback with error
   }
 }
 
