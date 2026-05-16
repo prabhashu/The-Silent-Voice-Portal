@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     // 4. Save to Postgres
     await db.insert(reports).values({
       text: reportText, // Store original
-      category: analysis.rawLabel ? analysis.rawLabel.substring(0, 50) : (category || 'General'), // DEBUG HACK: Show AI label in category
+      category: category || 'General',
       studentName: studentName || 'Anonymous',
       contactInfo: contactInfo || 'None provided',
       severity: finalSeverity,
