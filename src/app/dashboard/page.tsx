@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, ShieldAlert, CheckCircle, Clock, Activity, Shield, Search, Filter, SlidersHorizontal, RefreshCw, ArrowDownUp } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, CheckCircle, Clock, Activity, Shield, Search, Filter, RefreshCw, ArrowDownUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Report {
@@ -225,7 +225,7 @@ export default function Dashboard() {
                   <div className="flex-1 mb-6 relative">
                     <div className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-neutral-800 group-hover:bg-indigo-500/50 transition-colors" />
                     <p className="text-neutral-200 text-sm leading-relaxed pl-3 italic">
-                      "{report.text}"
+                      &quot;{report.text}&quot;
                     </p>
                   </div>
 
