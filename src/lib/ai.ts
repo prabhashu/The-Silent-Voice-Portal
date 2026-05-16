@@ -1,27 +1,12 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
-
-const apiKey = process.env.GEMINI_API_KEY || "dummy-key";
-const genAI = new GoogleGenerativeAI(apiKey);
-
-// Disable safety blocks so the AI can actually analyze reports about bullying/violence
-const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-];
+// We use native fetch to the Gemini REST API instead of the SDK to avoid Serverless "Error fetching" bugs
 
 export async function analyzeSentiment(text: string) {
   try {
-    // If we don't have a real API key configured, return fallback
-    if (process.env.GEMINI_API_KEY === undefined) {
-      console.warn("GEMINI_API_KEY is missing. Returning neutral score.");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       return { score: 0.5, rawLabel: 'no-api-key' };
     }
 
-    // Use Gemini 1.5 Flash for ultra-fast, cheap text analysis
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
-    
     const prompt = `You are an expert school counselor AI with native fluency in English, Sinhala, and Singlish (Sinhala written with English letters).
     Analyze the risk level of the provided student report. 
     
@@ -45,8 +30,27 @@ export async function analyzeSentiment(text: string) {
     
     Text: ${text}`;
     
-    const result = await model.generateContent(prompt);
-    const label = result.response.text().trim();
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 40)}`);
+    }
+
+    const data = await response.json();
+    const label = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '3 stars';
     
     let score = 0.5; // Neutral default
     
@@ -75,11 +79,11 @@ export async function analyzeSentiment(text: string) {
 
 export async function translateToEnglish(text: string) {
   try {
-    if (process.env.GEMINI_API_KEY === undefined) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       return text;
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
     const prompt = `You are a translator. Translate the given text from Sinhala or Singlish (Sinhala written with English letters) to English. 
     
     Singlish Dictionary for context:
@@ -94,8 +98,26 @@ export async function translateToEnglish(text: string) {
     
     Text: ${text}`;
     
-    const result = await model.generateContent(prompt);
-    return result.response.text().trim();
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      return text; // Fallback to original text on translation error
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || text;
   } catch(e) {
     console.error('Error translating text:', e);
     return text;
