@@ -15,23 +15,30 @@ export async function analyzeSentiment(text: string) {
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
       max_tokens: 100,
-      system: 'Analyze the sentiment and risk severity of the provided text (which might be in English, Sinhala, or Singlish). Respond with a JSON object with a single "score" property from 0.0 to 1.0, where 1.0 is extremely urgent/high risk (e.g. self-harm, violence) and 0.0 is low risk. Output ONLY valid JSON.',
+      system: 'Analyze the sentiment of the provided text (which might be in English, Sinhala, or Singlish). Classify it exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars". Where "1 star" is extremely negative/concerning, and "5 stars" is extremely positive. Respond with ONLY the label string and nothing else.',
       messages: [{ role: 'user', content: text }],
     });
     
-    const content = response.content[0].type === 'text' ? response.content[0].text : '{}';
-    let score = 0.5;
-    try {
-      const jsonStr = content.match(/\{[\s\S]*\}/)?.[0] || content;
-      const parsed = JSON.parse(jsonStr);
-      if (typeof parsed.score === 'number') {
-        score = parsed.score;
-      }
-    } catch(e) {
-       console.error("Failed to parse Claude score", e);
+    const label = response.content[0].type === 'text' ? response.content[0].text.trim() : '3 stars';
+    
+    let score = 0.5; // Neutral default
+    
+    // Restore exact scoring logic that was used before
+    switch (label) {
+      case '1 star': score = 0.75; break; // Negative sentiment -> Medium Risk
+      case '2 stars': score = 0.50; break;
+      case '3 stars': score = 0.35; break;
+      case '4 stars': score = 0.15; break;
+      case '5 stars': score = 0.05; break; // Extremely positive / low risk
+      default:
+        if (label.includes('1')) score = 0.75;
+        else if (label.includes('2')) score = 0.50;
+        else if (label.includes('4')) score = 0.15;
+        else if (label.includes('5')) score = 0.05;
+        break;
     }
     
-    return { score, rawLabel: 'claude-analysis' };
+    return { score, rawLabel: label };
   } catch (error) {
     console.error('Error analyzing sentiment with Anthropic:', error);
     return { score: 0.5 }; // Fallback
