@@ -1,29 +1,27 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || process.env.NETLIFY_BLOBS_CONTEXT || "dummy-key",
-});
+const apiKey = process.env.GEMINI_API_KEY || "dummy-key";
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function analyzeSentiment(text: string) {
   try {
     // If we don't have a real API key configured, return fallback
-    if (process.env.ANTHROPIC_API_KEY === undefined) {
-      console.warn("ANTHROPIC_API_KEY is missing. Returning neutral score.");
+    if (process.env.GEMINI_API_KEY === undefined) {
+      console.warn("GEMINI_API_KEY is missing. Returning neutral score.");
       return { score: 0.5, rawLabel: 'no-api-key' };
     }
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 100,
-      system: 'Analyze the sentiment of the provided text (which might be in English, Sinhala, or Singlish). Classify it exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars". Where "1 star" is extremely negative/concerning, and "5 stars" is extremely positive. Respond with ONLY the label string and nothing else.',
-      messages: [{ role: 'user', content: text }],
-    });
+    // Use Gemini 1.5 Flash for ultra-fast, cheap text analysis
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const label = response.content[0].type === 'text' ? response.content[0].text.trim() : '3 stars';
+    const prompt = `Analyze the sentiment of the provided text (which might be in English, Sinhala, or Singlish). Classify it exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars". Where "1 star" is extremely negative/concerning, and "5 stars" is extremely positive. Respond with ONLY the label string and nothing else.\n\nText: ${text}`;
+    
+    const result = await model.generateContent(prompt);
+    const label = result.response.text().trim();
     
     let score = 0.5; // Neutral default
     
-    // Restore exact scoring logic that was used before
+    // Exact scoring logic
     switch (label) {
       case '1 star': score = 0.75; break; // Negative sentiment -> Medium Risk
       case '2 stars': score = 0.50; break;
@@ -40,24 +38,22 @@ export async function analyzeSentiment(text: string) {
     
     return { score, rawLabel: label };
   } catch (error) {
-    console.error('Error analyzing sentiment with Anthropic:', error);
+    console.error('Error analyzing sentiment with Gemini:', error);
     return { score: 0.5 }; // Fallback
   }
 }
 
 export async function translateToEnglish(text: string) {
   try {
-    if (process.env.ANTHROPIC_API_KEY === undefined) {
+    if (process.env.GEMINI_API_KEY === undefined) {
       return text;
     }
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 500,
-      system: 'You are a translator. Translate the given text from Sinhala or Singlish to English. If the text is already in English, just return the exact original text. Only output the final translated text and absolutely nothing else.',
-      messages: [{ role: 'user', content: text }],
-    });
-    return response.content[0].type === 'text' ? response.content[0].text.trim() : text;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const prompt = `You are a translator. Translate the given text from Sinhala or Singlish to English. If the text is already in English, just return the exact original text. Only output the final translated text and absolutely nothing else.\n\nText: ${text}`;
+    
+    const result = await model.generateContent(prompt);
+    return result.response.text().trim();
   } catch(e) {
     console.error('Error translating text:', e);
     return text;
