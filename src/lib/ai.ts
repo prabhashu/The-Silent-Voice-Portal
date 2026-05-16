@@ -22,12 +22,25 @@ export async function analyzeSentiment(text: string) {
     // Use Gemini 1.5 Flash for ultra-fast, cheap text analysis
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
     
-    const prompt = `You are a school counselor AI. Analyze the risk level of the provided text. The text may be in English, Sinhala script, or Singlish (Sinhala written with English letters, e.g., "mata gahanwa" = "they are hitting me", "maranawa" = "kill"). Classify the text exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars".
-    - "1 star": Extremely negative, severe concerning behavior (violence, hitting, bullying, self-harm, extreme sadness).
+    const prompt = `You are an expert school counselor AI with native fluency in English, Sinhala, and Singlish (Sinhala written with English letters).
+    Analyze the risk level of the provided student report. 
+    
+    Singlish Reference Dictionary (Urgent/High Risk words):
+    - gahanawa, gahanwa, gahanna = hitting / to hit (Violence)
+    - maranawa, marenna, marila = kill / to die / dead (Severe Harm)
+    - baya, bayai = scared / fear (Concern)
+    - wada denawa, wadadenawa = harassing / torturing (Bullying)
+    - kapanawa = cutting (Self-harm / Violence)
+    - kudu, ice, guli, arakku = drugs / alcohol (Substance abuse)
+    - athawara = abuse (Severe)
+    
+    Classify the text exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars".
+    - "1 star": Extremely negative, severe concerning behavior (violence, hitting, bullying, self-harm, extreme sadness, drugs).
     - "2 stars": Negative, minor concerns or stress.
-    - "3 stars": Neutral, harmless statements (e.g. "hi", "hello").
+    - "3 stars": Neutral statements.
     - "4 stars": Positive.
-    - "5 stars": Extremely positive.
+    - "5 stars": Extremely positive, OR harmless casual greetings like "hi", "hello", "test", "testing".
+    
     Respond with ONLY the exact label string (e.g. "1 star") and absolutely nothing else.
     
     Text: ${text}`;
@@ -67,7 +80,19 @@ export async function translateToEnglish(text: string) {
     }
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
-    const prompt = `You are a translator. Translate the given text from Sinhala or Singlish to English. If the text is already in English, just return the exact original text. Only output the final translated text and absolutely nothing else.\n\nText: ${text}`;
+    const prompt = `You are a translator. Translate the given text from Sinhala or Singlish (Sinhala written with English letters) to English. 
+    
+    Singlish Dictionary for context:
+    - gahanawa / gahanwa / gahanna = hitting / to hit
+    - maranawa / marenna = kill / to die
+    - baya / bayai = scared / fear
+    - wada denawa = harassing
+    - kapanawa = cutting
+    - kudu = drugs
+    
+    If the text is already in English (like "hi" or "hello"), just return the exact original text. Only output the final translated text and absolutely nothing else.
+    
+    Text: ${text}`;
     
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
