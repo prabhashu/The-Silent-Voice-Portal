@@ -1,69 +1,58 @@
-import { pipeline, env } from '@xenova/transformers';
+import Anthropic from '@anthropic-ai/sdk';
 
-// Skip local model check since we are running in a serverless environment
-// We'll download from Hugging Face directly
-env.allowLocalModels = false;
-
-// We use a singleton pattern to keep the model loaded in memory
-class PipelineSingleton {
-  static task = 'text-classification';
-  // Upgraded to a multilingual model that natively understands 100+ languages including Sinhala/Singlish
-  static model = 'Xenova/bert-base-multilingual-uncased-sentiment';
-  static instance: any = null;
-
-  static async getInstance(progress_callback?: any) {
-    if (this.instance === null) {
-      this.instance = await pipeline(this.task as any, this.model, { 
-        progress_callback,
-        // Added more options for performance and caching
-        quantized: true, // Use a smaller, faster version of the model
-        revision: 'main',
-      });
-    }
-    return this.instance;
-  }
-}
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || process.env.NETLIFY_BLOBS_CONTEXT || "dummy-key",
+});
 
 export async function analyzeSentiment(text: string) {
   try {
-    const classifier = await PipelineSingleton.getInstance();
-    const result = await classifier(text);
-    
-    let score = 0.5; // Neutral default
-    if (result && result.length > 0) {
-      const { label } = result[0]; // Output is usually '1 star' to '5 stars'
-      
-      // Convert stars to Severity (Lower stars = Higher severity/risk)
-      // Note: A sentiment model cannot tell the difference between "I hate homework" (negative) 
-      // and "I want to die" (negative). Therefore, "1 star" should only trigger Medium/High (0.75), 
-      // not an absolute Urgent (0.95), unless caught by the safety keyword net.
-      switch (label) {
-        case '1 star': score = 0.75; break; // Negative sentiment -> Medium Risk
-        case '2 stars': score = 0.50; break;
-        case '3 stars': score = 0.35; break;
-        case '4 stars': score = 0.15; break;
-        case '5 stars': score = 0.05; break; // Extremely positive / low risk
-        default:
-          // Fallback if the model uses NEGATIVE/POSITIVE labels instead
-          if (label === 'NEGATIVE') score = 0.75;
-          if (label === 'POSITIVE') score = 0.15;
-          break;
-      }
+    // If we don't have a real API key configured, return fallback
+    if (process.env.ANTHROPIC_API_KEY === undefined) {
+      console.warn("ANTHROPIC_API_KEY is missing. Returning neutral score.");
+      return { score: 0.5, rawLabel: 'no-api-key' };
     }
-    return { score, rawLabel: result[0]?.label };
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 100,
+      system: 'Analyze the sentiment and risk severity of the provided text (which might be in English, Sinhala, or Singlish). Respond with a JSON object with a single "score" property from 0.0 to 1.0, where 1.0 is extremely urgent/high risk (e.g. self-harm, violence) and 0.0 is low risk. Output ONLY valid JSON.',
+      messages: [{ role: 'user', content: text }],
+    });
+    
+    const content = response.content[0].type === 'text' ? response.content[0].text : '{}';
+    let score = 0.5;
+    try {
+      const jsonStr = content.match(/\{[\s\S]*\}/)?.[0] || content;
+      const parsed = JSON.parse(jsonStr);
+      if (typeof parsed.score === 'number') {
+        score = parsed.score;
+      }
+    } catch(e) {
+       console.error("Failed to parse Claude score", e);
+    }
+    
+    return { score, rawLabel: 'claude-analysis' };
   } catch (error) {
-    console.error('Error analyzing sentiment:', error);
+    console.error('Error analyzing sentiment with Anthropic:', error);
     return { score: 0.5 }; // Fallback
   }
 }
 
-// Very simple translation mock for demo
-// In a real app, you would use Google Translate API
 export async function translateToEnglish(text: string) {
-  // If we had a real API:
-  // return await fetchGoogleTranslate(text);
-  
-  // For the demo, we assume the text is already english or singlish that the model might vaguely understand,
-  // or we just return the original text. The user's prompt mentioned "nikanma Google Translate API ... use karala".
-  return text; 
+  try {
+    if (process.env.ANTHROPIC_API_KEY === undefined) {
+      return text;
+    }
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 500,
+      system: 'You are a translator. Translate the given text from Sinhala or Singlish to English. If the text is already in English, just return the exact original text. Only output the final translated text and absolutely nothing else.',
+      messages: [{ role: 'user', content: text }],
+    });
+    return response.content[0].type === 'text' ? response.content[0].text.trim() : text;
+  } catch(e) {
+    console.error('Error translating text:', e);
+    return text;
+  }
 }

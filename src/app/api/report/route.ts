@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { db } from '@/lib/db';
+import { reports } from '@/db/schema';
 import { translateToEnglish, analyzeSentiment } from '@/lib/ai';
 
 export async function POST(req: Request) {
@@ -44,11 +45,8 @@ export async function POST(req: Request) {
       isHighRisk = true;
     }
 
-    // 4. Save to MongoDB
-    const client = await clientPromise;
-    const db = client.db('silent-voice');
-    
-    const newReport = {
+    // 4. Save to Postgres
+    await db.insert(reports).values({
       text: reportText, // Store original
       category: category || 'General',
       studentName: studentName || 'Anonymous',
@@ -57,9 +55,7 @@ export async function POST(req: Request) {
       isHighRisk,
       status: 'pending', // pending, reviewed, resolved
       timestamp: new Date(),
-    };
-
-    await db.collection('reports').insertOne(newReport);
+    });
 
     return NextResponse.json({ 
       success: true, 

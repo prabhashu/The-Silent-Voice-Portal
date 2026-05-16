@@ -47,9 +47,15 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
+      let data;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await res.json();
+      } else {
+        throw new Error("The server encountered an error and could not complete the request. Please check if your database is connected or if the AI model timed out.");
+      }
 
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
+      if (!res.ok) throw new Error(data?.error || 'Something went wrong');
 
       setIsSuccess(true);
       setReportText('');
