@@ -8,25 +8,29 @@ export async function analyzeSentiment(text: string) {
     }
 
     const prompt = `You are an expert school counselor AI with native fluency in English, Sinhala, and Singlish (Sinhala written with English letters).
-    Analyze the risk level of the provided student report. 
+    Analyze the risk/severity level of the provided student report. 
     
-    Singlish Reference Dictionary (Urgent/High Risk words):
+    Singlish & Sinhala Dictionary (Context for understanding):
     - gahanawa, gahanwa, gahanna = hitting / to hit (Violence)
     - maranawa, marenna, marila = kill / to die / dead (Severe Harm)
-    - baya, bayai = scared / fear (Concern)
+    - baya, bayai = scared / fear (Anxiety)
     - wada denawa, wadadenawa = harassing / torturing (Bullying)
+    - inna denne naha, karadara karanawa = won't let me stay / bothering me (Bullying / Harassment)
     - kapanawa = cutting (Self-harm / Violence)
     - kudu, ice, guli, arakku = drugs / alcohol (Substance abuse)
     - athawara = abuse (Severe)
+    - stress eka wadi, oluwa ridenawa = high stress / headache (Mental Health Concern)
+    - randu wenawa = fighting (Conflict)
     
-    Classify the text exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars".
-    - "1 star": Extremely negative, severe concerning behavior (violence, hitting, bullying, self-harm, extreme sadness, drugs).
-    - "2 stars": Negative, minor concerns or stress.
-    - "3 stars": Neutral statements.
-    - "4 stars": Positive.
-    - "5 stars": Extremely positive, OR harmless casual greetings like "hi", "hello", "test", "testing".
-    
-    Respond with ONLY the exact label string (e.g. "1 star") and absolutely nothing else.
+    Score the severity/risk of this report on a precise scale of 0 to 100.
+    - 90 to 100: Extreme emergencies (Physical violence, hitting, weapons, severe bullying, suicide, drugs).
+    - 80 to 89: High risk / Urgent Mental Health (Severe emotional distress, cries for help like "stress eka wadi pls help").
+    - 60 to 79: Medium-High risk (Continuous bullying like "inna denne naha", harassment).
+    - 40 to 59: Medium risk (Arguments with friends, mild anxiety).
+    - 10 to 39: Low risk (General questions, minor issues, "sir mata udaw karanna").
+    - 0 to 9: Harmless/Neutral (e.g., "hi", "hello", "test", "good morning").
+
+    Respond with ONLY the exact number from 0 to 100 and absolutely nothing else. Do not include a percent sign or any other text.
     
     Text: ${text}`;
     
@@ -53,24 +57,16 @@ export async function analyzeSentiment(text: string) {
     }
 
     const data = await response.json();
-    const label = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '3 stars';
+    const label = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '50';
     
-    let score = 0.5; // Neutral default
+    // Parse the number from Gemini's response
+    const parsedNum = parseInt(label, 10);
+    let score = 0.5; // Neutral fallback
     
-    // Exact scoring logic
-    switch (label) {
-      case '1 star': score = 0.75; break; // Negative sentiment -> Medium Risk
-      case '2 stars': score = 0.50; break;
-      case '3 stars': score = 0.35; break;
-      case '4 stars': score = 0.15; break;
-      case '5 stars': score = 0.05; break; // Extremely positive / low risk
-      default:
-        if (label.includes('1')) score = 0.75;
-        else if (label.includes('2')) score = 0.50;
-        else if (label.includes('3')) score = 0.35;
-        else if (label.includes('4')) score = 0.15;
-        else if (label.includes('5')) score = 0.05;
-        break;
+    if (!isNaN(parsedNum)) {
+      score = Math.max(0, Math.min(100, parsedNum)) / 100; // Convert 85 to 0.85
+    } else {
+      console.warn("AI returned non-number:", label);
     }
     
     return { score, rawLabel: label };
