@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, Send, CheckCircle2, AlertTriangle, MessageSquareHeart, User, Phone, HeartPulse, BookOpen, Wind, Activity, Stethoscope, ArrowRight, Bot, Sparkles } from 'lucide-react';
+import { Shield, Lock, Send, CheckCircle2, AlertTriangle, MessageSquareHeart, User, Phone, HeartPulse, ArrowRight, Bot, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -61,8 +61,8 @@ export default function Home() {
       setReportText('');
       setStudentName('');
       setContactInfo('');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }

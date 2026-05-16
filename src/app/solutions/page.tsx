@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { HeartPulse, BookOpen, Wind, Activity, Stethoscope, ArrowLeft, Shield, Bot } from 'lucide-react';
+import { HeartPulse, BookOpen, Wind, Activity, Stethoscope, ArrowLeft, Bot } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Solutions() {
