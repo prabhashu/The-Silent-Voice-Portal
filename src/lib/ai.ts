@@ -22,7 +22,15 @@ export async function analyzeSentiment(text: string) {
     // Use Gemini 1.5 Flash for ultra-fast, cheap text analysis
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", safetySettings });
     
-    const prompt = `Analyze the sentiment of the provided text (which might be in English, Sinhala, or Singlish). Classify it exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars". Where "1 star" is extremely negative/concerning, and "5 stars" is extremely positive. Respond with ONLY the label string and nothing else.\n\nText: ${text}`;
+    const prompt = `You are a school counselor AI. Analyze the risk level of the provided text. The text may be in English, Sinhala script, or Singlish (Sinhala written with English letters, e.g., "mata gahanwa" = "they are hitting me", "maranawa" = "kill"). Classify the text exactly like a product review model into one of these labels: "1 star", "2 stars", "3 stars", "4 stars", or "5 stars".
+    - "1 star": Extremely negative, severe concerning behavior (violence, hitting, bullying, self-harm, extreme sadness).
+    - "2 stars": Negative, minor concerns or stress.
+    - "3 stars": Neutral, harmless statements (e.g. "hi", "hello").
+    - "4 stars": Positive.
+    - "5 stars": Extremely positive.
+    Respond with ONLY the exact label string (e.g. "1 star") and absolutely nothing else.
+    
+    Text: ${text}`;
     
     const result = await model.generateContent(prompt);
     const label = result.response.text().trim();

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const redFlags = [
       // Violence / Harm
       "මරනවා", "ගහනවා", "toxic", "suicide", "kill", "die", "depressed", "harass",
-      "gahanawa", "maranawa", "kapanawa", "marila", "hitha wada", "baya", "bully",
+      "gahanawa", "gahanwa", "maranawa", "kapanawa", "marila", "hitha wada", "baya", "bully",
       
       // Drugs / Substance Abuse
       "බොනවා", "bonawa", "cudu", "kudu", "guli", "arakku", "ganja", "sigurate", 
