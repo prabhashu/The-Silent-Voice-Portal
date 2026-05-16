@@ -30,7 +30,7 @@ export async function analyzeSentiment(text: string) {
     
     Text: ${text}`;
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -46,6 +46,9 @@ export async function analyzeSentiment(text: string) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      if (response.status === 404) {
+        throw new Error(`API Key error: Please get your key from aistudio.google.com. Your current key doesn't have Gemini enabled.`);
+      }
       throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 40)}`);
     }
 
@@ -98,7 +101,7 @@ export async function translateToEnglish(text: string) {
     
     Text: ${text}`;
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
