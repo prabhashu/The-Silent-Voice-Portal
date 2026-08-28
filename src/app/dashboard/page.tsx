@@ -6,7 +6,7 @@ import { AlertTriangle, ShieldAlert, CheckCircle, Clock, Activity, Shield, Searc
 import { cn } from '@/lib/utils';
 
 interface Report {
-  _id: string;
+  id: string;
   text: string;
   category: string;
   studentName?: string;
@@ -197,7 +197,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2, delay: idx * 0.03 }}
-                  key={report._id}
+                  key={report.id}
                   className={cn(
                     "flex flex-col p-6 rounded-3xl border backdrop-blur-sm transition-all hover:shadow-lg group",
                     report.isHighRisk 

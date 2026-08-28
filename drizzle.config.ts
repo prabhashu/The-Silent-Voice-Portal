@@ -11,7 +11,7 @@ try {
 export default defineConfig({
   dialect: "postgresql",
   schema: "./src/db/schema.ts",
-  out: "./drizzle",
+  out: "netlify/database/migrations",
   dbCredentials: {
     url,
   },
