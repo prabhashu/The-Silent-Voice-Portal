@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Send, CheckCircle2, AlertTriangle, MessageSquareHeart, User, Phone, HeartPulse, ArrowRight, Bot, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import AiCounselorModal from '@/components/AiCounselorModal';
 
 export default function Home() {
   const [reportText, setReportText] = useState('');
@@ -12,6 +13,7 @@ export default function Home() {
   const [studentName, setStudentName] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [isCounselorOpen, setIsCounselorOpen] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -335,7 +337,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Floating AI Agent Button (Coming Soon) */}
+      {/* Floating AI Counselor Live Button */}
       <motion.div 
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -343,27 +345,37 @@ export default function Home() {
         className="fixed bottom-6 right-6 z-[100] group"
       >
         {/* Tooltip */}
-        <div className="absolute bottom-full right-0 mb-4 w-48 p-3 bg-neutral-900 border border-indigo-500/30 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none transform origin-bottom-right">
+        <div className="absolute bottom-full right-0 mb-4 w-52 p-3 bg-neutral-900/95 backdrop-blur-md border border-indigo-500/30 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none transform origin-bottom-right">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-3 h-3 text-indigo-400" />
-            <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider">Coming Soon</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">AI Counselor Live</span>
           </div>
           <p className="text-xs text-neutral-300">
-            Real-time AI Counselor to help you problem-solve instantly.
+            Chat 24/7 in Singlish, தமிழ், Tanglish, සිංහල & EN.
           </p>
           {/* Arrow */}
           <div className="absolute -bottom-2 right-6 w-4 h-4 bg-neutral-900 border-b border-r border-indigo-500/30 transform rotate-45"></div>
         </div>
 
         {/* Floating Action Button */}
-        <button className="relative flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full shadow-[0_0_30px_rgba(99,102,241,0.4)] hover:shadow-[0_0_40px_rgba(99,102,241,0.6)] hover:scale-110 transition-all duration-300 cursor-help border border-white/10">
-          <Bot className="w-6 h-6 text-white" />
-          <span className="absolute top-0 right-0 flex w-3 h-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-white border-2 border-indigo-600"></span>
+        <button 
+          onClick={() => setIsCounselorOpen(true)}
+          className="relative flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-full shadow-[0_0_30px_rgba(99,102,241,0.5)] hover:shadow-[0_0_50px_rgba(99,102,241,0.8)] hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer border border-white/20 group"
+          aria-label="Open AI Counselor Chat"
+        >
+          <Bot className="w-7 h-7 text-white group-hover:rotate-12 transition-transform duration-300" />
+          <span className="absolute -top-1 -right-1 flex w-4 h-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-neutral-950"></span>
           </span>
         </button>
       </motion.div>
+
+      {/* AI Counselor Interactive Modal */}
+      <AiCounselorModal
+        isOpen={isCounselorOpen}
+        onClose={() => setIsCounselorOpen(false)}
+      />
     </main>
   );
 }
